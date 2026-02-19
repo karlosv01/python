@@ -6,7 +6,8 @@ import os
 
 app = Flask(__name__)
 
-#~comment
+# ~comment
+
 
 def favorite_colors() -> List[Dict]:
     config = {
