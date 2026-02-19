@@ -1,39 +1,13 @@
-def runInDocker(String image, Closure body) {
-  docker.image(image).inside {
-        body()
-  }
-}
 pipeline {
   // `agent any` = el pipeline se ejecuta en cualquier nodo/agente disponible.
   agent any
 
-  environment {
-    IMAGE_NAME = "python-ci-tools:${env.BUILD_NUMBER}"
-    }
   stages {
     stage('Info') {
       steps {
-        // TODO (E1): imprime JOB_NAME y BUILD_NUMBER
+      // TODO (E1): imprime JOB_NAME y BUILD_NUMBER
         sh 'echo "JOB_NAME: ${JOB_NAME}"'
         sh 'echo "BUILD_NUMBER: ${BUILD_NUMBER}"'
-      }
-    }
-    stage('CI - Test') {
-      steps {
-        script {
-          runInDocker('python:3.6-slim') {
-            sh 'pip install -r requirements.txt'
-            sh 'pytest -q'
-          }
-        }
-      }
-    }
-    stage('CI - Build image') {
-      steps {
-        script {
-          // TODO (E5): Construye la imagen Docker usando el Dockerfile del repo:
-          docker.build(env.IMAGE_NAME, '-f devops/Dockerfile .')
-        }
       }
     }
   }
