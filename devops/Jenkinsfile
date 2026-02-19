@@ -110,13 +110,10 @@ pipeline {
   parameters {
     // TODO (E6.3): Añade un booleanParam RUN_CD (default false) para habilitar CD.
     booleanParam(name: 'RUN_CD', defaultValue: false, description: 'Ejecutar CD (solo develop/master)')
-    booleanParam(name: 'USE_REGISTRY_IMAGE_IN_CD', defaultValue: true, description: 'Usar imagen del registry en CD')
   }
   environment {
     CI_IMAGE_NAME = "python-ci-tools:${env.BUILD_NUMBER}"
     APP_URL = 'http://localhost:5001/'
-    COMPOSE_FILE = 'docker-compose.yml'
-    COMPOSE_SERVICE = 'app'
   }
   stages {
     stage('Info') {
@@ -199,39 +196,27 @@ pipeline {
         script {
           // [E6.2] TODO: calcular DEPLOY_ENV y COMPOSE_PROJECT.
           // Ejemplo:
+          //env.BRANCH_NAME
+          echo "Branch actual: ${env.BRANCH_NAME}"
+          echo "RUN_CD: ${params.RUN_CD}"
+
           env.DEPLOY_ENV = (env.BRANCH_NAME == 'master') ? 'PRO' : 'DEV'
-          env.COMPOSE_PROJECT = env.DEPLOY_ENV.toLowerCase()
-          echo "DEPLOY_ENV: ${env.DEPLOY_ENV}, COMPOSE_PROJECT: ${env.COMPOSE_PROJECT}"
-          // [E7/E12] TODO: elegir imagen para CD (registry o local).
-          // Ejemplo:
-          String cdImage = params.USE_REGISTRY_IMAGE_IN_CD ? env.IMAGE_REGISTRY : env.CI_IMAGE_NAME
-           // [E7] TODO: si usas imagen de registry, hacer login + pull.
+          echo "Deploying to ${env.DEPLOY_ENV}"
 
-          // [E12] TODO: actualizar la imagen del servicio en docker-compose.yml.
-          // Ejemplo:
-          echo "Actualizando ${env.COMPOSE_SERVICE} en ${env.COMPOSE_FILE} a la imagen ${cdImage}"
-          setComposeServiceImage(
-             composeFile: env.COMPOSE_FILE,
-             serviceName: env.COMPOSE_SERVICE,
-             image: cdImage
-           )
-
-          // [E6][E6.5][E12] TODO: ejecutar up -> logs -> down con cleanup garantizado.
-          // Ejemplo:
-          composeUpTestDown(
-           up: "docker compose -p ${env.COMPOSE_PROJECT} up -d",
-           test: "sleep 5 && docker compose -p ${env.COMPOSE_PROJECT} logs app",
-           down: "docker compose -p ${env.COMPOSE_PROJECT} down --volumes"
-         )
+          echo "Imagen: ${env.IMAGE_NAME}"
+          sh "echo URL=${APP_URL}"
         }
       }
       post {
         // [E6.5] TODO: añade limpieza y reporting.
-        always { sh "docker rmi ${env.CI_IMAGE_NAME} || true" }
+        always {
+          sh 'docker compose down --volumes || true'
+          sh "docker rmi ${env.CI_IMAGE_NAME} || true"
+        }
         success { echo 'SUCCESS' }
         failure {
           echo 'FAILURE'
-          sh "docker compose -p ${env.COMPOSE_PROJECT} logs || true"
+          sh 'docker compose logs || true'
         }
       }
     }
