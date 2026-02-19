@@ -63,5 +63,13 @@ pipeline {
         }
       }
     }
+    stage('CI - Build image') {
+      steps {
+        script {
+          // TODO (E5): Construye la imagen Docker usando el Dockerfile del repo:
+          docker.build(env.CI_IMAGE_NAME, '-f devops/Dockerfile .')
+        }
+      }
+    }
   }
 }
