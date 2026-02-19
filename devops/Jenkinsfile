@@ -1,12 +1,15 @@
 def runInDocker(String image, Closure body) {
-    docker.image(image).inside {
+  docker.image(image).inside {
         body()
-    }
+  }
 }
 pipeline {
   // `agent any` = el pipeline se ejecuta en cualquier nodo/agente disponible.
   agent any
 
+  environment {
+    CI_IMAGE_NAME = "python-ci-tools:${env.BUILD_NUMBER}"
+  }
   stages {
     stage('Info') {
       steps {
@@ -17,11 +20,46 @@ pipeline {
     }
     stage('CI - Test') {
       steps {
-        script {          
-          devopsLib.runInDocker('python:3.6-slim') {
+        script {
+          runInDocker('python:3.6-slim') {
             sh 'pip install -r requirements.txt'
             sh 'pytest -q'
           }
+        }
+      }
+    }
+    // =========================
+    // Ejercicio 3 (preparación): construir imagen CI con make
+    // =========================
+    stage('CI - Build tools image') {
+      steps {
+        script {
+          // TODO (E3): Construye una imagen de CI desde devops/ci.Dockerfile.
+          // Ejemplo:
+          // env.CI_IMAGE_NAME = "python-ci-tools:${env.BUILD_NUMBER}"
+          docker.build(env.CI_IMAGE_NAME, '-f devops/ci.Dockerfile .')
+        }
+      }
+    }
+
+    // =========================
+    // Ejercicio 3 (separar CI): stage Lint
+    // =========================
+    stage('CI - Lint') {
+      steps {
+        script {
+          // TODO (E3/E4): Ejecuta lint en contenedor Python.
+          runInDocker(env.CI_IMAGE_NAME) {
+            sh 'pip install -r requirements.txt flake8 mypy'
+            sh 'make lint'
+          }
+        //
+        // Nota docente:
+        // La primera ejecución puede fallar por formato (black --check).
+        // Flujo esperado:
+        // 1) crear rama `fix/lint`
+        // 2) ejecutar `make reformat` en local
+        // 3) commit + push y relanzar Jenkins
         }
       }
     }
