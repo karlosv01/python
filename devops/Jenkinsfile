@@ -3,8 +3,7 @@ def runInDocker(String image, Closure body) {
         body()
   }
 }
- 
- 
+
 pipeline {
   // `agent any` = el pipeline se ejecuta en cualquier nodo/agente disponible.
   agent any
@@ -101,14 +100,17 @@ pipeline {
           // [E6.2] TODO: calcular DEPLOY_ENV y COMPOSE_PROJECT.
           // Ejemplo:
           //env.BRANCH_NAME
-          echo "Branch actual: ${env.BRANCH_NAME}"
-          echo "RUN_CD: ${params.RUN_CD}"
-
-          env.DEPLOY_ENV = (env.BRANCH_NAME == 'master') ? 'PRO' : 'DEV'
+          env.DEPLOY_ENV = (env.BRANCH_NAME == 'master') ? 'pro' : 'dev'
           echo "Deploying to ${env.DEPLOY_ENV}"
 
-          echo "Imagen: ${env.IMAGE_NAME}"
-          sh "echo URL=${APP_URL}"
+          echo "CD habilitado: RUN_CD=${params.RUN_CD}, branch=${env.BRANCH_NAME}"
+
+          echo 'Ejecutando aplicación con docker-compose'
+          sh "docker compose -p ${env.DEPLOY_ENV} up -d"
+          echo 'Esperando a que la aplicación se inicie...'
+          sh 'sleep 5'
+          echo 'Mostrando logs de la aplicación:'
+          sh "docker compose -p ${env.DEPLOY_ENV} logs app"
         }
       }
       post {
