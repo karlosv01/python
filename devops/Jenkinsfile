@@ -18,7 +18,7 @@ pipeline {
     stage('CI - Test') {
       steps {
         script {          
-          devopsLib.runInDocker('python:3.6-slim') {
+          runInDocker('python:3.6-slim') {
             sh 'pip install -r requirements.txt'
             sh 'pytest -q'
           }
