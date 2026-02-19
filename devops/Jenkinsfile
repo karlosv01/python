@@ -1,11 +1,8 @@
-/*
-  Practica 2 - Jenkinsfile dummy (PUNTO DE PARTIDA)
-
-  Este Jenkinsfile es intencionalmente simple. En la Practica 2 iras anadiendo
-  piezas (stages, agents, funciones Groovy, Docker build, docker compose, etc.)
-  hasta construir un pipeline CI/CD completo.
-*/
-
+def runInDocker(String image, Closure body) {
+    docker.image(image).inside {
+        body()
+    }
+}
 pipeline {
   // `agent any` = el pipeline se ejecuta en cualquier nodo/agente disponible.
   agent any
@@ -13,10 +10,20 @@ pipeline {
   stages {
     stage('Info') {
       steps {
-      // TODO (E1): imprime JOB_NAME y BUILD_NUMBER
+        // TODO (E1): imprime JOB_NAME y BUILD_NUMBER
         sh 'echo "JOB_NAME: ${JOB_NAME}"'
         sh 'echo "BUILD_NUMBER: ${BUILD_NUMBER}"'
       }
     }
+    stage('CI - Test') {
+      steps {
+        script {          
+          devopsLib.runInDocker('python:3.6-slim') {
+            sh 'pip install -r requirements.txt'
+            sh 'pytest -q'
+          }
+        }
+      }
+    }
   }
-} 
+}
