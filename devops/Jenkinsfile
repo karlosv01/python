@@ -3,12 +3,120 @@ def runInDocker(String image, Closure body) {
         body()
   }
 }
+def composeUpTestDown(Map args = [:]) {
+  if (!args.up || !args.test || !args.down) {
+    error 'composeUpTestDown requiere los argumentos: up, test y down'
+  }
+
+  try {
+    sh args.up.toString()
+    sh args.test.toString()
+  } finally {
+    sh "${args.down} || true"
+  }
+}
+def setComposeServiceImage(Map args = [:]) {
+  String composeFile = args.get('composeFile', 'docker-compose.yml').toString()
+  String serviceName = args.get('serviceName', 'app').toString()
+  String image = args.get('image', '').toString().trim()
+
+  if (!image) {
+    error 'setComposeServiceImage requiere el argumento image'
+  }
+
+  List<String> lines = readFile(file: composeFile).split("\\r?\\n", -1) as List<String>
+  int servicesIndex = lines.findIndexOf { it.trim() == 'services:' }
+  if (servicesIndex < 0) {
+    error "No se encontro el bloque services: en ${composeFile}"
+  }
+
+  int servicesIndent = indentSize(lines[servicesIndex])
+  int serviceIndex = -1
+  int serviceIndent = -1
+
+  for (int index = servicesIndex + 1; index < lines.size(); index++) {
+    String currentLine = lines[index]
+    String trimmed = currentLine.trim()
+
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue
+    }
+
+    int currentIndent = indentSize(currentLine)
+    if (currentIndent <= servicesIndent) {
+      break
+    }
+
+    if (trimmed == "${serviceName}:") {
+      serviceIndex = index
+      serviceIndent = currentIndent
+      break
+    }
+  }
+
+  if (serviceIndex < 0) {
+    error "No se encontro el servicio ${serviceName} dentro de ${composeFile}"
+  }
+
+  int serviceEnd = lines.size()
+  for (int index = serviceIndex + 1; index < lines.size(); index++) {
+    String currentLine = lines[index]
+    String trimmed = currentLine.trim()
+
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue
+    }
+
+    if (indentSize(currentLine) <= serviceIndent) {
+      serviceEnd = index
+      break
+    }
+  }
+
+  int imageLineIndex = -1
+  int imageIndent = serviceIndent + 2
+  for (int index = serviceIndex + 1; index < serviceEnd; index++) {
+    String currentLine = lines[index]
+    String trimmed = currentLine.trim()
+
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue
+    }
+
+    int currentIndent = indentSize(currentLine)
+    if (currentIndent > serviceIndent && trimmed.startsWith('image:')) {
+      imageLineIndex = index
+      imageIndent = currentIndent
+      break
+    }
+  }
+
+  String imageLine = "${' ' * imageIndent}image: ${image}"
+  if (imageLineIndex >= 0) {
+    lines[imageLineIndex] = imageLine
+  } else {
+    lines.add(serviceIndex + 1, imageLine)
+  }
+
+  writeFile(file: composeFile, text: lines.join("\n"))
+  echo "Imagen del servicio ${serviceName} actualizada en ${composeFile}: ${image}"
+}
 pipeline {
   // `agent any` = el pipeline se ejecuta en cualquier nodo/agente disponible.
   agent any
-
+  // =========================
+  // Ejercicio 6.3 (parámetros)
+  // =========================
+  parameters {
+    // TODO (E6.3): Añade un booleanParam RUN_CD (default false) para habilitar CD.
+    booleanParam(name: 'RUN_CD', defaultValue: false, description: 'Ejecutar CD (solo develop/master)')
+    booleanParam(name: 'USE_REGISTRY_IMAGE_IN_CD', defaultValue: true, description: 'Usar imagen del registry en CD')
+  }
   environment {
     CI_IMAGE_NAME = "python-ci-tools:${env.BUILD_NUMBER}"
+    APP_URL = 'http://localhost:5001/'
+    COMPOSE_FILE = 'docker-compose.yml'
+    COMPOSE_SERVICE = 'app'
   }
   stages {
     stage('Info') {
@@ -68,6 +176,62 @@ pipeline {
         script {
           // TODO (E5): Construye la imagen Docker usando el Dockerfile del repo:
           docker.build(env.CI_IMAGE_NAME, '-f devops/Dockerfile .')
+        }
+      }
+    }
+
+    // =========================
+    // Ejercicio 6 (compose) + Ejercicio 6.1 (solo develop/master) + Ejercicio 6.3 (RUN_CD)
+    // =========================
+    stage('CD') {
+      when {
+        // [E6.1][E6.3] TODO: ejecutar CD por rama o parámetro.
+        // - Si RUN_CD=true, ejecutar en cualquier rama.
+        // - Si RUN_CD=false, ejecutar solo en develop/master.
+        // Ejemplo:
+        anyOf {
+          expression { return params.RUN_CD }
+          branch 'develop'
+          branch 'master'
+        }
+      }
+      steps {
+        script {
+          // [E6.2] TODO: calcular DEPLOY_ENV y COMPOSE_PROJECT.
+          // Ejemplo:
+          env.DEPLOY_ENV = (env.BRANCH_NAME == 'master') ? 'PRO' : 'DEV'
+          env.COMPOSE_PROJECT = env.DEPLOY_ENV.toLowerCase()
+          echo "DEPLOY_ENV: ${env.DEPLOY_ENV}, COMPOSE_PROJECT: ${env.COMPOSE_PROJECT}"
+          // [E7/E12] TODO: elegir imagen para CD (registry o local).
+          // Ejemplo:
+          String cdImage = params.USE_REGISTRY_IMAGE_IN_CD ? env.IMAGE_REGISTRY : env.CI_IMAGE_NAME
+           // [E7] TODO: si usas imagen de registry, hacer login + pull.
+
+          // [E12] TODO: actualizar la imagen del servicio en docker-compose.yml.
+          // Ejemplo:
+          echo "Actualizando ${env.COMPOSE_SERVICE} en ${env.COMPOSE_FILE} a la imagen ${cdImage}"
+          setComposeServiceImage(
+             composeFile: env.COMPOSE_FILE,
+             serviceName: env.COMPOSE_SERVICE,
+             image: cdImage
+           )
+
+          // [E6][E6.5][E12] TODO: ejecutar up -> logs -> down con cleanup garantizado.
+          // Ejemplo:
+          composeUpTestDown(
+           up: "docker compose -p ${env.COMPOSE_PROJECT} up -d",
+           test: "sleep 5 && docker compose -p ${env.COMPOSE_PROJECT} logs app",
+           down: "docker compose -p ${env.COMPOSE_PROJECT} down --volumes"
+         )
+        }
+      }
+      post {
+        // [E6.5] TODO: añade limpieza y reporting.
+        always { sh "docker rmi ${env.CI_IMAGE_NAME} || true" }
+        success { echo 'SUCCESS' }
+        failure {
+          echo 'FAILURE'
+          sh "docker compose -p ${env.COMPOSE_PROJECT} logs || true"
         }
       }
     }
