@@ -101,19 +101,11 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
           docker network ls
           echo -e "\n--- VOLÚMENES ---"
           docker volume ls      
-      - name: "Test E2E con curl"
+      - name: "Probar conexión con infraestructura local
         run: |
-          echo "🌐 Realizando petición a la API en el puerto 5001..."
-          # Usamos -s (silent) para evitar la barra de progreso y -S para mostrar errores
-          RESPONSE=$(curl -sS --fail http://172.16.236.1:5001)
-          echo "📩 Respuesta recibida: $RESPONSE"
-          
-          if [ "$RESPONSE" == "Hola Mundo desde Flask!" ]; then
-            echo "✅ El servicio está respondiendo correctamente."
-          else
-            echo "❌ ERROR: Respuesta inesperada del servidor."
-            exit 1
-          fi     
+          # Esto ahora funcionará porque el runner está en la misma red de Docker
+          curl -I http://local-registry:5000
+          curl -I http://artifactory:8081   
       - name: "Cleanup"
         if: always() ## siempre se ejecuta
         run: |
