@@ -100,11 +100,7 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
           echo -e "\n--- REDES DE DOCKER ---"
           docker network ls
           echo -e "\n--- VOLÚMENES ---"
-          docker volume ls      
-      - name: "Probar conexión con infraestructura local"
-        run: |
-          curl -I http://172.16.236.1:5000
-          curl -I http://172.16.236.1:8081   
+          docker volume ls  
       - name: "Cleanup"
         if: always() ## siempre se ejecuta
         run: |
