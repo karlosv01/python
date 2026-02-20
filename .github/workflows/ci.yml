@@ -1,8 +1,18 @@
-## ejercicio 0
+## ejercicio 1
+
 name: CI (dummy)
 
 on: ## Event triggers (on:): cuándo se ejecuta (push, PR, manual, schedule, etc.).
-  workflow_dispatch:
+  push: ## El workflow se ejecutará cada vez que alguien suba código (haga un git push) a cualquier rama del repositorio
+  pull_request:
+    branches: [develop, master] ##El workflow solo se activará si se abre (o se actualiza) un Pull Request que tenga como objetivo las ramas develop o master.
+  workflow_dispatch: ##Clic manual en la web
+    inputs:
+      RUN_CD:
+        description: "Run CD stage"
+        required: false
+        type: boolean
+        default: false
 
 jobs: ##Jobs: unidades de ejecución paralelizables (jobs.<job_id>).
   dummy:
