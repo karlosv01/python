@@ -1,5 +1,5 @@
-## ejercicio 8
-## Ejercicio 8 - Condiciones por rama: CD solo en develop/master
+## ejercicio 9
+## Ejercicio 9 - Simulación de despliegue con Docker Compose + cleanup
 
 name: CI (dummy)
 env:
@@ -61,6 +61,7 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
             -f devops/ci.Dockerfile .
   cd:
     name: Despliegue Continuo
+    needs: ci # Asegura que el CI pase primero
     if: github.ref_name == 'develop' || github.ref_name == 'master' || github.ref_name == 'main' || inputs.RUN_CD == true
     runs-on: ubuntu-latest    
     steps: 
@@ -68,3 +69,36 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
         run: |
           echo "rama: ${{ github.ref_name }}"
           echo "inputs.RUN_CD: ${{ inputs.RUN_CD }}"    
+      - name: "Checkout del repositorio"
+        uses: actions/checkout@v4    
+      - name: "Volver a construir la imagen en este job." ## Otra opcion es subirla al Registry
+        run:  docker build -t mi-aplicacion-ci:0.0.1 -f devops/ci.Dockerfile . ## # Necesitamos construirla AQUÍ para que el Compose la encuentre
+      - name: "Verificar Directorio y Archivos"
+        run: |
+          echo "📍 Directorio actual: $(pwd)"
+          echo "📂 Contenido del directorio:"
+          ls -R
+          
+          if [ -f "docker-compose.yml" ]; then
+            echo "✅ docker-compose.yml encontrado en la raíz."
+          else
+            echo "❌ ERROR: No veo el archivo docker-compose.yml"
+            exit 1
+          fi        
+      - name: "Levantar contenedor"
+        run: docker compose up -d  
+      - name: "Esperar 10 segundos a que se carguen los servicios"
+        run: sleep 10
+      - name: "Inspeccionar recursos creados"
+        run: |
+          echo "--- CONTENEDORES ACTIVOS ---"
+          docker ps -a 
+          echo -e "\n--- REDES DE DOCKER ---"
+          docker network ls
+          echo -e "\n--- VOLÚMENES ---"
+          docker volume ls      
+      - name: "Cleanup"
+        if: always() ## siempre se ejecuta
+        run: |
+          echo "Limpiando contenedores y volúmenes..."
+          docker compose down -v
