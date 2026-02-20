@@ -1,5 +1,5 @@
-## ejercicio 9
-## Ejercicio 9 - Simulación de despliegue con Docker Compose + cleanup
+## ejercicio final 
+## Paso 4 - Usar el runner en el workflow
 
 name: CI (dummy)
 env:
@@ -29,7 +29,9 @@ on: ## Event triggers (on:): cuándo se ejecuta (push, PR, manual, schedule, etc
 jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test, deploy).
   ci: ## Es el identificador de este job.
     name: Integración Continua
-    runs-on: ubuntu-latest # Define el sistema operativo (Linux) 
+    #runs-on: ubuntu-latest # Define el sistema operativo (Linux) 
+    #runs-on: self-hosted # para ejecutarlo con la herramienta de git en local
+    runs-on: [self-hosted, linux, docker]
     env:
       IMAGE_NAME: c
       APP_URL: d
@@ -63,7 +65,9 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
     name: Despliegue Continuo
     needs: ci # Asegura que el CI pase primero
     if: github.ref_name == 'develop' || github.ref_name == 'master' || github.ref_name == 'main' || inputs.RUN_CD == true
-    runs-on: ubuntu-latest    
+    #runs-on: ubuntu-latest    
+    #runs-on: self-hosted
+    runs-on: [self-hosted, linux, docker]
     steps: 
       - name: "Validación de Condición de Despliegue"
         run: |
@@ -97,6 +101,19 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
           docker network ls
           echo -e "\n--- VOLÚMENES ---"
           docker volume ls      
+      - name: "Test E2E con curl"
+        run: |
+          echo "🌐 Realizando petición a la API en el puerto 5001..."
+          # Usamos -s (silent) para evitar la barra de progreso y -S para mostrar errores
+          RESPONSE=$(curl -sS --fail http://172.16.236.1:5001)
+          echo "📩 Respuesta recibida: $RESPONSE"
+          
+          if [ "$RESPONSE" == "Hola Mundo desde Flask!" ]; then
+            echo "✅ El servicio está respondiendo correctamente."
+          else
+            echo "❌ ERROR: Respuesta inesperada del servidor."
+            exit 1
+          fi     
       - name: "Cleanup"
         if: always() ## siempre se ejecuta
         run: |
