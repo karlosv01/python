@@ -4,4 +4,4 @@ black[jupyter]
 
 Flask
 flake8
-psycopg2
+psycopg2-binary
