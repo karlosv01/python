@@ -1,5 +1,5 @@
-## ejercicio 5
-## Ejercicio 5 - Gestión de variables y secretos en GitHub (documentación + configuración)
+## ejercicio 6
+## Ejercicio 6 - Docker como agente: job en contenedor
 
 name: CI (dummy)
 env:
@@ -55,3 +55,7 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
           echo "REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}"
           echo "ARTIFACTORY_URL: ${{ vars.ARTIFACTORY_URL  }}"
           echo "REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}"
+      - name: "Construir imagen y ejecutar Tests/Lint" ## Al usar el flag -f, le indicas a Docker la ruta exacta y el nombre de tu archivo. Si no lo pones, Docker buscará por defecto un archivo llamado simplemente Dockerfile en la raíz, y fallará.
+        run: |
+          docker build -t mi-aplicacion-ci \
+            -f devops/ci.Dockerfile .
