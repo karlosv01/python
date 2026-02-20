@@ -1,4 +1,5 @@
-## ejercicio 4
+## ejercicio 5
+## Ejercicio 5 - Gestión de variables y secretos en GitHub (documentación + configuración)
 
 name: CI (dummy)
 env:
@@ -32,6 +33,7 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
     env:
       IMAGE_NAME: c
       APP_URL: d
+    environment: DEV ## o seleccionar de manera dinamica DEV vs PRO:  ${{ github.ref_name == 'master' && 'PRO' || 'DEV' }}
     steps: ## Es la lista secuencial de tareas.
       - name: Checkout del repositorio
         uses: actions/checkout@v4 # Copia tu código en el runner. esta línea "descarga" tu código dentro de la máquina para que puedas trabajar con él (leer archivos, compilar, etc.).
@@ -48,5 +50,8 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
       - name: "Mostrar Parámetros inputs"
         run: |
           echo "RUN_CD: ${{ inputs.RUN_CD }}"
-          echo "DEPLOY_ENV: ${{ inputs.DEPLOY_ENV  }}"
-      
+      - name: "Mostrar environment DEV"
+        run: |
+          echo "REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}"
+          echo "ARTIFACTORY_URL: ${{ vars.ARTIFACTORY_URL  }}"
+          echo "REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}"
