@@ -1,4 +1,4 @@
-## ejercicio 3
+## ejercicio 4
 
 name: CI (dummy)
 env:
@@ -16,6 +16,14 @@ on: ## Event triggers (on:): cuándo se ejecuta (push, PR, manual, schedule, etc
         required: false
         type: boolean
         default: false
+      DEPLOY_ENV:
+        description: "Entorno de despliegue"
+        required: false
+        type: choice
+        options:
+          - DEV
+          - PRO
+        default: DEV
 
 jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test, deploy).
   ci: ## Es el identificador de este job.
@@ -37,3 +45,8 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
         run: |
           echo "IMAGE_NAME: ${{ env.IMAGE_NAME }}"
           echo "APP_URL: ${{ env.APP_URL }}"
+      - name: "Mostrar Parámetros inputs"
+        run: |
+          echo "RUN_CD: ${{ inputs.RUN_CD }}"
+          echo "DEPLOY_ENV: ${{ inputs.DEPLOY_ENV  }}"
+      
