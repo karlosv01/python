@@ -1,4 +1,4 @@
-## ejercicio 1
+## ejercicio 2
 
 name: CI (dummy)
 
@@ -14,12 +14,14 @@ on: ## Event triggers (on:): cuándo se ejecuta (push, PR, manual, schedule, etc
         type: boolean
         default: false
 
-jobs: ##Jobs: unidades de ejecución paralelizables (jobs.<job_id>).
-  dummy:
-    runs-on: ubuntu-latest
-    steps: ## Steps: comandos o acciones dentro de un job.
-      - name: Mostrar contexto
-        run: |
-          echo "Repo: $GITHUB_REPOSITORY"
-          echo "Ref:  $GITHUB_REF"
-          echo "Branch: $GITHUB_REF_NAME"
+jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test, deploy).
+  ci: ## Es el identificador de este job.
+    name: Integración Continua
+    runs-on: ubuntu-latest # Define el sistema operativo (Linux)
+
+    steps: ## Es la lista secuencial de tareas.
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4 # Copia tu código en el runner. esta línea "descarga" tu código dentro de la máquina para que puedas trabajar con él (leer archivos, compilar, etc.).
+      - name: Info
+        run: echo ${{github.ref_name}} ${{github.sha}} ${{runner.os}} ${{runner.name}}
+         
