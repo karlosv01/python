@@ -103,9 +103,8 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
           docker volume ls      
       - name: "Probar conexión con infraestructura local"
         run: |
-          # Esto ahora funcionará porque el runner está en la misma red de Docker
-          curl -I http://local-registry:5000
-          curl -I http://artifactory:8081   
+          curl -I http://172.16.236.1:5000
+          curl -I http://172.16.236.1:8081   
       - name: "Cleanup"
         if: always() ## siempre se ejecuta
         run: |
