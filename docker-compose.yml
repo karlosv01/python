@@ -1,10 +1,10 @@
 services:
   app:
-    #image: contrerasadr/devops-training-python-app:0.0.1
-    build: 
-      context: .
-      dockerfile: devops/Dockerfile
-    container_name: my-flask-app-dc
+    image: mi-aplicacion-ci:0.0.1 # Imagen que debe usar (debe coincidir con la que creas en el CI)
+    # build:                    # (Comentado) Si no existiera la imagen, Docker intentaría construirla
+    #   context: .              # (Comentado) Ubicación de los archivos para construir la imagen
+    #   dockerfile: devops/ci.Dockerfile # (Comentado) Ruta específica del Dockerfile de CI
+    container_name: my-flask-app-dc # Nombre fijo que tendrá el contenedor al ejecutarse
     restart: unless-stopped
     networks:
       - scalian_training
@@ -41,4 +41,5 @@ networks:
     driver: bridge
   
 volumes:
+
   dbdata:
