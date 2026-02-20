@@ -1,6 +1,5 @@
-## ejercicio 7
-## Ejercicio 7 - Build de imagen Docker en CI
-
+## ejercicio 8
+## Ejercicio 8 - Condiciones por rama: CD solo en develop/master
 
 name: CI (dummy)
 env:
@@ -60,3 +59,12 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
         run: |
           docker build -t mi-aplicacion-ci:0.0.1 \
             -f devops/ci.Dockerfile .
+  cd:
+    name: Despliegue Continuo
+    if: github.ref_name == 'develop' || github.ref_name == 'master' || github.ref_name == 'main' || inputs.RUN_CD == true
+    runs-on: ubuntu-latest    
+    steps: 
+      - name: "Validación de Condición de Despliegue"
+        run: |
+          echo "rama: ${{ github.ref_name }}"
+          echo "inputs.RUN_CD: ${{ inputs.RUN_CD }}"    
