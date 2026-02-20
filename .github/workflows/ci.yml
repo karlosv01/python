@@ -1,5 +1,6 @@
-## ejercicio 6
-## Ejercicio 6 - Docker como agente: job en contenedor
+## ejercicio 7
+## Ejercicio 7 - Build de imagen Docker en CI
+
 
 name: CI (dummy)
 env:
@@ -57,5 +58,5 @@ jobs: ## contenedor de todas las tareas. Aquí puedes tener varios (ej: ci, test
           echo "REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}"
       - name: "Construir imagen y ejecutar Tests/Lint" ## Al usar el flag -f, le indicas a Docker la ruta exacta y el nombre de tu archivo. Si no lo pones, Docker buscará por defecto un archivo llamado simplemente Dockerfile en la raíz, y fallará.
         run: |
-          docker build -t mi-aplicacion-ci \
+          docker build -t mi-aplicacion-ci:0.0.1 \
             -f devops/ci.Dockerfile .
